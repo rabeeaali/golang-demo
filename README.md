@@ -1,10 +1,8 @@
-## go-fiber-demo
+## go-demo
 
 This is just demo of go lang with fiber(https://github.com/gofiber/fiber) contains:
 
-- Authentication.
-- Reset password.
-- simple curd with global pagniate of query 
-
-and more
+- Authentication using JWT & Fiber.
+- Reset password via code.
+- Simple curd with global pagniate of query 
 
