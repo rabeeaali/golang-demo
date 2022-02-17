@@ -9,6 +9,8 @@ import (
 func PostRoutes(api *fiber.App) {
 	auth := api.Group("/api/posts")
 	auth.Get("/", middlewares.Protected(), postControllers.Index)
+	auth.Get("/show/:id", middlewares.Protected(), postControllers.ShowPost)
 	auth.Post("/create", middlewares.Protected(), postControllers.StorePost)
-	//auth.Patch("/update", userControllers.up)
+	auth.Put("/update/:id", middlewares.Protected(), postControllers.UpdatePost)
+	auth.Delete("/delete/:id", middlewares.Protected(), postControllers.DeletePost)
 }

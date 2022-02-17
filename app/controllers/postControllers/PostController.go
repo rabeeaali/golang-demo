@@ -5,6 +5,7 @@ import (
 	"fiber/app/requests"
 	"fiber/config"
 	"fiber/utils"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"strconv"
 )
@@ -20,7 +21,7 @@ func StorePost(c *fiber.Ctx) error {
 
 	// get the data from request
 	if err := c.BodyParser(&data); err != nil {
-		return err
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "error", "please try to put some data")
 	}
 
 	post := models.Post{
@@ -30,7 +31,7 @@ func StorePost(c *fiber.Ctx) error {
 	}
 
 	// validate Error
-	if err := requests.StoreValidate(post.Title, post.Desc); err != nil {
+	if err := requests.PostStoreValidate(post.Title, post.Desc); err != nil {
 		return utils.ErrorJSON(c, fiber.StatusUnprocessableEntity, "validation errors", err)
 	}
 
@@ -42,45 +43,55 @@ func StorePost(c *fiber.Ctx) error {
 	})
 }
 
-//func ShowPost(c *gin.Context) {
-//	id := c.Param("id")
-//	var post models.Post
-//	if err := database.DB.First(&post, id).Error; err != nil {
-//		util.ErrorJSON(c, http.StatusBadRequest, "record not found!")
-//		return
-//	}
-//	util.SuccessJSON(c, http.StatusOK, "OK!", post)
-//}
-//
-//func UpdatePost(c *gin.Context) {
-//	var post models.Post
-//	if err := database.DB.Where("id = ?", c.Param("id")).First(&post).Error; err != nil {
-//		util.ErrorJSON(c, http.StatusBadRequest, "record not found!")
-//		return
-//	}
-//	// Decode request data
-//	if err := c.ShouldBind(&post); err != nil {
-//		util.ErrorJSON(c, http.StatusBadRequest, err.Error())
-//		return
-//	}
-//	// Validate error
-//	if err := post.Validate(); err != nil {
-//		util.ErrorJSON(c, http.StatusBadRequest, err.Error())
-//		return
-//	}
-//	// update post
-//	postData := models.Post{Name: post.Name, Desc: post.Desc}
-//	database.DB.Model(&post).Updates(postData)
-//	util.ResponseSuccess(c, http.StatusOK, "Updated Post Successfully")
-//}
-//
-//func DeletePost(c *gin.Context) {
-//	// Get model if exist
-//	var post models.Post
-//	if err := database.DB.First(&post, c.Param("id")).Error; err != nil {
-//		util.ErrorJSON(c, http.StatusBadRequest, "record not found!")
-//		return
-//	}
-//	database.DB.Delete(&post)
-//	util.ResponseSuccess(c, http.StatusOK, "Deleted Post Successfully")
-//}
+func ShowPost(c *fiber.Ctx) error {
+	id := c.Params("id")
+	fmt.Println(id)
+	var post models.Post
+
+	if err := config.DB.First(&post, id).Error; err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "error", "Post not found")
+	}
+
+	return utils.SuccessJSON(c, fiber.StatusOK, "OK!", post)
+}
+
+func UpdatePost(c *fiber.Ctx) error {
+	var data map[string]string
+
+	post := models.Post{
+		Title:  data["title"],
+		Desc:   data["description"],
+		UserID: utils.GetUserID(c),
+	}
+
+	// Decode request data
+	if err := c.BodyParser(&post); err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "error", "please try to put some data")
+	}
+
+	// Validate error
+	if err := requests.PostUpdateValidate(post.Title, post.Desc); err != nil {
+		return utils.ErrorJSON(c, fiber.StatusUnprocessableEntity, "validation errors", err)
+	}
+
+	// Find the post data by id
+	if err := config.DB.Where("id = ?", c.Params("id")).First(&post).Error; err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "error", "Post not found")
+	}
+
+	// Update the post data
+	config.DB.Model(&post).Updates(post)
+
+	return utils.SuccessJSON(c, fiber.StatusOK, "Updated Post Successfully", "")
+}
+
+func DeletePost(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var post models.Post
+
+	if err := config.DB.First(&post, id).Error; err != nil {
+		return utils.ErrorJSON(c, fiber.StatusBadRequest, "error", "Post not found")
+	}
+	config.DB.Delete(&post)
+	return utils.SuccessJSON(c, fiber.StatusOK, "Deleted Post Successfully", "")
+}
